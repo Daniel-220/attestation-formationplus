@@ -1,0 +1,109 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+public class AttestationApp extends JFrame {
+    private JComboBox<String> etudiantComboBox;
+    private JTextField conventionTextField;
+    private JTextArea messageTextArea;
+
+    public AttestationApp() {
+        // Initialisation de la fenêtre
+        setTitle("Gestion des Attestations");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(400, 300);
+
+        // Initialisation des composants
+        etudiantComboBox = new JComboBox<>(new String[]{"Étudiant 1", "Étudiant 2", "Étudiant 3"});
+        conventionTextField = new JTextField();
+        messageTextArea = new JTextArea();
+
+        JButton genererButton = new JButton("Générer Texte");
+        genererButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                genererTexte();
+            }
+        });
+
+        JButton insererButton = new JButton("Insérer en Base de Données");
+        insererButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                insererEnBaseDeDonnees();
+            }
+        });
+
+        // Agencement des composants dans la fenêtre
+        setLayout(new GridLayout(6, 2));
+        add(new JLabel("Étudiant :"));
+        add(etudiantComboBox);
+        add(new JLabel("Nom de la Convention :"));
+        add(conventionTextField);
+        add(new JLabel("Message Généré :"));
+        add(messageTextArea);
+        add(new JLabel(""));
+        add(new JLabel(""));
+        add(genererButton);
+        add(insererButton);
+
+        // Affichage de la fenêtre
+        setVisible(true);
+    }
+
+    private void genererTexte() {
+        String etudiant = etudiantComboBox.getSelectedItem().toString();
+        String convention = conventionTextField.getText();
+        String message = String.format("Bonjour %s,\nVous avez suivi une formation chez FormationPlus. Veuillez trouver ci-joint votre attestation.\n\nCordialement,\nFormationPlus", etudiant);
+        messageTextArea.setText(message);
+    }
+
+    private void insererEnBaseDeDonnees() {
+        try {
+            // Connexion à la base de données (Adaptez les détails de connexion)
+            Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/votre_base_de_donnees", "utilisateur", "mot_de_passe");
+
+            // Préparation de la requête d'insertion
+            String sql = "INSERT INTO Attestation (etudiant, convention, message) VALUES (?, ?, ?)";
+            PreparedStatement statement = connection.prepareStatement(sql);
+
+            // Récupération des données du formulaire
+            String etudiant = etudiantComboBox.getSelectedItem().toString();
+            String convention = conventionTextField.getText();
+            String message = messageTextArea.getText();
+
+            // Remplissage des paramètres de la requête
+            statement.setString(1, etudiant);
+            statement.setString(2, convention);
+            statement.setString(3, message);
+
+            // Exécution de la requête
+            statement.executeUpdate();
+
+            // Fermeture des ressources
+            statement.close();
+            connection.close();
+
+            // Affichage d'un message de succès (Adaptez selon votre interface utilisateur)
+            JOptionPane.showMessageDialog(this, "Données insérées avec succès !");
+        } catch (SQLException e) {
+            e.printStackTrace();
+            // Gestion des erreurs de la base de données
+            JOptionPane.showMessageDialog(this, "Erreur lors de l'insertion en base de données : " + e.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                new AttestationApp();
+            }
+        });
+    }
+}
